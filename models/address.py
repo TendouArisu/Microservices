@@ -134,3 +134,20 @@ class AddressRead(AddressBase):
             ]
         }
     }
+
+class AddressDelete(AddressBase):
+    """Creation payload; ID is generated server-side but present in the base model."""
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "id": "11111111-1111-4111-8111-111111111111",
+                    "street": "221B Baker St",
+                    "city": "London",
+                    "state": None,
+                    "postal_code": "NW1 6XE",
+                    "country": "UK",
+                }
+            ]
+        }
+    }

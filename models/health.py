@@ -17,8 +17,8 @@ class Health(BaseModel):
                 "status_message": "OK",
                 "timestamp": "2025-09-02T12:34:56Z",
                 "ip_address": "192.168.1.10",
-                "echo": "Hello from query",
-                "path_echo": "Hello from path"
+                "echo": "Default from code",
+                "path_echo": "Default from code"
             }
         }
     }

@@ -12,9 +12,10 @@ from fastapi import Query, Path
 from typing import Optional
 
 from models.person import PersonCreate, PersonRead, PersonUpdate
-from models.address import AddressCreate, AddressRead, AddressUpdate
+from models.address import AddressCreate, AddressRead, AddressUpdate, AddressDelete
 from models.health import Health
-
+from models.store import StoreBase
+from models.items import ItemBase
 port = int(os.environ.get("FASTAPIPORT", 8000))
 
 # -----------------------------------------------------------------------------
@@ -22,6 +23,8 @@ port = int(os.environ.get("FASTAPIPORT", 8000))
 # -----------------------------------------------------------------------------
 persons: Dict[UUID, PersonRead] = {}
 addresses: Dict[UUID, AddressRead] = {}
+stores: Dict[UUID, StoreBase] = {}
+items: Dict[UUID, ItemBase] = {}
 
 app = FastAPI(
     title="Person/Address API",
@@ -91,6 +94,14 @@ def get_address(address_id: UUID):
         raise HTTPException(status_code=404, detail="Address not found")
     return addresses[address_id]
 
+@app.delete("/addresses/{address_id}",response_model=AddressDelete, status_code=200)
+def delete_address(address_id: UUID):
+    if address_id not in addresses:
+        raise HTTPException(status_code=404, detail="Address not found")
+    deleted = addresses[address_id]
+    del addresses[address_id]
+    return deleted
+
 @app.patch("/addresses/{address_id}", response_model=AddressRead)
 def update_address(address_id: UUID, update: AddressUpdate):
     if address_id not in addresses:
@@ -159,6 +170,96 @@ def update_person(person_id: UUID, update: PersonUpdate):
     persons[person_id] = PersonRead(**stored)
     return persons[person_id]
 
+
+
+
+
+# -----------------------------------------------------------------------------
+# Store endpoints
+# -----------------------------------------------------------------------------
+@app.post("/stores", response_model=StoreBase, status_code=201)
+def create_store(store: StoreBase):
+    if store.id in stores:
+        raise HTTPException(status_code=400, detail="Store with this ID already exists")
+
+    for item in store.items:
+        if item.id not in items:
+            raise HTTPException(status_code=400, detail=f"Item {item.id} not found in items database")
+
+    for worker in store.workers:
+        if worker.uni not in [p.uni for p in persons.values()]:
+            raise HTTPException(status_code=400, detail=f"Worker {worker.uni} not found in persons database")
+
+    stores[store.id] = store
+    return store
+
+
+@app.get("/stores", response_model=List[StoreBase])
+def list_stores():
+    return list(stores.values())
+
+@app.get("/stores/{store_id}", response_model=StoreBase)
+def get_store(store_id: UUID):
+    if store_id not in stores:
+        raise HTTPException(status_code=404, detail="Store not found")
+    return stores[store_id]
+
+@app.patch("/stores/{store_id}", response_model=StoreBase)
+def update_store(store_id: UUID, update: StoreBase):
+    if store_id not in stores:
+        raise HTTPException(status_code=404, detail="Store not found")
+    for item in update.items:
+        if item.id not in items:
+            raise HTTPException(status_code=400, detail=f"Item {item.id} not found in items database")
+    for worker in update.workers:
+        if worker.uni not in [p.uni for p in persons.values()]:
+            raise HTTPException(status_code=400, detail=f"Worker {worker.uni} not found in persons database")
+    stored = stores[store_id].model_dump()
+    stored.update(update.model_dump(exclude_unset=True))
+    stores[store_id] = StoreBase(**stored)
+    return stores[store_id]
+
+@app.delete("/stores/{store_id}", status_code=204)
+def delete_store(store_id: UUID):
+    if store_id not in stores:
+        raise HTTPException(status_code=404, detail="Store not found")
+    del stores[store_id]
+    return None
+
+
+
+
+
+
+# -----------------------------------------------------------------------------
+# Item endpoints
+# -----------------------------------------------------------------------------
+
+
+
+@app.post("/items", response_model=ItemBase, status_code=201)
+def create_item(item: ItemBase):
+    if item.id in items:
+        raise HTTPException(status_code=400, detail="Item with this ID already exists")
+    items[item.id] = item
+    return item
+
+@app.get("/items", response_model=List[ItemBase])
+def list_items():
+    return list(items.values())
+
+@app.get("/items/{item_id}", response_model=ItemBase)
+def get_item(item_id: UUID):
+    if item_id not in items:
+        raise HTTPException(status_code=404, detail="Item not found")
+    return items[item_id]
+
+@app.delete("/items/{item_id}", status_code=204)
+def delete_item(item_id: UUID):
+    if item_id not in items:
+        raise HTTPException(status_code=404, detail="Item not found")
+    del items[item_id]
+    return None
 # -----------------------------------------------------------------------------
 # Root
 # -----------------------------------------------------------------------------
