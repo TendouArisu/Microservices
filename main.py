@@ -170,10 +170,6 @@ def update_person(person_id: UUID, update: PersonUpdate):
     persons[person_id] = PersonRead(**stored)
     return persons[person_id]
 
-
-
-
-
 # -----------------------------------------------------------------------------
 # Store endpoints
 # -----------------------------------------------------------------------------
@@ -225,18 +221,9 @@ def delete_store(store_id: UUID):
         raise HTTPException(status_code=404, detail="Store not found")
     del stores[store_id]
     return None
-
-
-
-
-
-
 # -----------------------------------------------------------------------------
 # Item endpoints
 # -----------------------------------------------------------------------------
-
-
-
 @app.post("/items", response_model=ItemBase, status_code=201)
 def create_item(item: ItemBase):
     if item.id in items:
